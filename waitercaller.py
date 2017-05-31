@@ -8,6 +8,7 @@ from user import User
 from flask_login import LoginManager
 from flask_login import login_required
 from flask_login import login_user
+from flask_login import logout_user
 from flask_login import login_manager
 from mockdbhelper import MockDBHelper as DBHelper
 
@@ -42,6 +43,11 @@ def load_user(user_id):
     user_password = DB.get_user(user_id)
     if user_password:
         return User(user_id)
+
+@app.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('home'))
     
 if __name__ == '__main__':
     app.run(port=5000, debug=True)
