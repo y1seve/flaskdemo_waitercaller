@@ -9,7 +9,6 @@ class BitlyHelper:
     def shorten_url(self, longurl):
         try:
             url = ROOT_URL + SHORTEN.format(TOKEN, longurl)
-            print('11111111111111111111111111111111111111111111111')
             response = urlopen(url).read().decode('utf-8')
             jr = json.loads(response)
             return jr['data']['url']

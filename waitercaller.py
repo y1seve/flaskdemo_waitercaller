@@ -1,5 +1,6 @@
 
 import config
+import datetime
 from flask import Flask
 from flask import render_template
 from flask import redirect
@@ -75,11 +76,6 @@ def register():
     DB.add_user(email, salt, hashed)
     return redirect(url_for('home'))
 
-@app.route('/dashboard')
-@login_required
-def dashboard():
-    return render_template('dashboard.html')
-
 @app.route('/account/createtable', methods=['POST'])
 @login_required
 def account_createtable():
@@ -95,6 +91,28 @@ def account_deletetable():
     tableid = request.args.get('tableid')
     DB.delete_table(tableid)
     return redirect(url_for('account'))
+
+@app.route('/newrequest/<tid>')
+def new_request(tid):
+    DB.add_request(tid, datetime.datetime.now())
+    return 'Your request has been logged and a waiter will be withyou shorty'
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    now = datetime.datetime.now()
+    requests = DB.get_requests(current_user.get_id())
+    for req in requests:
+        deltseconds = (now - req['time']).seconds
+        req['wait_minutes'] = '{}.{}'.format((deltseconds // 60), str(deltseconds % 60).zfill(2))
+    return render_template('dashboard.html', requests=requests)
+
+@app.route('/dashboard/resolve')
+@login_required
+def dashboard_resolve():
+    request_id = request.args.get('request_id')
+    DB.delete_request(request_id)
+    return redirect(url_for('dashboard'))
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)
