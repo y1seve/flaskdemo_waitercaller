@@ -16,6 +16,7 @@ from flask_login import current_user
 from mockdbhelper import MockDBHelper as DBHelper
 from passwordhelper import PasswordHelper
 from bitlyhelper import BitlyHelper
+from forms import RegistrationForm
 
 
 DB = DBHelper()
@@ -27,7 +28,8 @@ app.secret_key = 'tPXJY3X37Qybz4QykV+hOyUxVQeEXf1Ao2C8upz+fGQXKsM'
 
 @app.route('/')
 def home():
-    return render_template('home.html')
+    registrationform = RegistrationForm()
+    return render_template('home1.html', registrationform=registrationform)
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -64,18 +66,17 @@ def logout():
 
 @app.route('/register', methods=['POST'])
 def register():
-    email = request.form.get('email')
-    pw1 = request.form.get('password')
-    pw2 = request.form.get('password2')
-    if not pw1 == pw2:
-        return redirect(url_for('home'))
-    if DB.get_user(email):
-        return redirect(url_for('home'))
-    salt = PH.get_salt()
-    hashed = PH.get_hash(pw1 + salt)
-    DB.add_user(email, salt, hashed)
-    return redirect(url_for('home'))
-
+    form = RegistrationForm(request.form)
+    if form.validate():
+        if DB.get_user(form.email.data):
+            form.email.errors.append("Email address already registered")
+            return render_template('home1.html', registrationform=form)
+        salt = PH.get_salt()
+        hashed = PH.get_hash(form.password2.data + salt)
+        DB.add_user(form.email.data, salt, hashed)
+        return render_template('home1.html', registrationform=form, onloadmessage='Registration successfully. Please log in.')
+    return render_template('home1.html', registrationform=form)
+     
 @app.route('/account/createtable', methods=['POST'])
 @login_required
 def account_createtable():
