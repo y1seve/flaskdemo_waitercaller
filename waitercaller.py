@@ -17,6 +17,7 @@ from mockdbhelper import MockDBHelper as DBHelper
 from passwordhelper import PasswordHelper
 from bitlyhelper import BitlyHelper
 from forms import RegistrationForm
+from forms import LoginForm
 
 
 DB = DBHelper()
@@ -28,24 +29,19 @@ app.secret_key = 'tPXJY3X37Qybz4QykV+hOyUxVQeEXf1Ao2C8upz+fGQXKsM'
 
 @app.route('/')
 def home():
-    registrationform = RegistrationForm()
-    return render_template('home1.html', registrationform=registrationform)
+    return render_template('home1.html', loginform=LoginForm(), registrationform=RegistrationForm())
 
 @app.route('/login', methods=['POST'])
 def login():
-    email = request.form.get('email')
-    password = request.form.get('password')
-    # user_password = DB.get_user(email)
-    # if user_password and user_password == password:
-    #     user = User(email)
-    #     login_user(user, remember=True)
-    #     return redirect(url_for('account'))
-    stored_user = DB.get_user(email)
-    if stored_user and PH.validate_password(password, stored_user['salt'], stored_user['hashed']):
-        user = User(email)
-        login_user(user, remember=True)
-        return redirect(url_for('account'))
-    return home()
+    form = LoginForm(request.form)
+    if form.validate():
+        stored_user = DB.get_user(form.loginemail.data)
+        if stored_user and PH.validate_password(form.loginpassword.data, stored_user['salt'], stored_user['hashed']):
+            user = User(form.loginemail.data)
+            login_user(user, remember=True)
+            return redirect(url_for('account'))
+        form.loginemail.errors.append('Email or password invalid')
+    return render_template('home1.html', LoginForm=form, registrationform=RegistrationForm())
 
 @app.route('/account')
 @login_required
@@ -74,8 +70,8 @@ def register():
         salt = PH.get_salt()
         hashed = PH.get_hash(form.password2.data + salt)
         DB.add_user(form.email.data, salt, hashed)
-        return render_template('home1.html', registrationform=form, onloadmessage='Registration successfully. Please log in.')
-    return render_template('home1.html', registrationform=form)
+        return render_template('home1.html', loginform=LoginForm(), registrationform=form, onloadmessage='Registration successfully. Please log in.')
+    return render_template('home1.html', loginform=LoginForm(), registrationform=form)
      
 @app.route('/account/createtable', methods=['POST'])
 @login_required
